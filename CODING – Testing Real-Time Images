@@ -1,0 +1,100 @@
+3rd part - Coding for Real-Time Video images Prediction
+
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.models import load_model
+import face_detection
+import numpy as np
+import cv2
+import os
+import imutils
+from imutils.video import VideoStream
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+prototxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\deploy.prototxt'])
+weightsPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\res10_300x300_ssd_iter_140000.caffemodel'])
+pbtxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector.pbtxt'])
+weightsPath1=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector_uint8.pb'])
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+  Net.setInput(blob)
+  detections=Net.forward()
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
+  faceNet.setInput(blob)
+  detections=faceNet.forward()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Class_Labels = ['1-Real_Face','2-Fake_Face_Easy','3-Fake_Face_Mid','4-Fake_Face_Hard']
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+face_detection_model = cv2.dnn.readNet(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\CMNV2.model')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------   
+ def detect_and_predict_face_detection_model(frame,Net,faceNet):
+    #grab the dimensions of the frame and then construct a blob
+    (h,w)=frame.shape[:2]
+    blob=cv2.dnn.blobFromImage(frame,1.0,(300,300),(104.0,177.0,123.0))
+  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  
+    #initialize our list of faces,their corresponding locations and list of predictions
+    
+    faces=[]
+    locs=[]
+    preds=[]
+    
+    for i in range(0,detections.shape[2]):
+        confidence=detections[0,0,i,2]
+    
+        if confidence>0.5:
+        #we need the X,Y coordinates
+            box=detections[0,0,i,3:7]*np.array([w,h,w,h])
+            (startX,startY,endX,endY)=box.astype('int')
+        
+            #ensure the bounding boxes fall within the dimensions of the frame
+            (startX,startY)=(max(0,startX),max(0,startY))
+            (endX,endY)=(min(w-1,endX),min(h-1,endY))
+        
+            #extract the fact ROI,convert it from BGR to RGB channel,resize it to 300,300 and preprocess it
+            face=frame[startY:endY,startX:endX]
+            face=cv2.cvtColor(face,cv2.COLOR_BGR2RGB)
+            face=cv2.resize(face,(300,300))
+            face=img_to_array(face)
+            face=preprocess_input(face)
+        
+            faces.append(face)
+            locs.append((startX,startY,endX,endY))
+        
+        #only make a predictions if atleat one face was detected
+        if len(faces)>0:
+            faces=np.array(faces,dtype='float32')
+            preds=faceNet.predict(faces)
+            
+        return (locs,preds)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+vs=VideoStream(src=0).start()
+
+while True:
+    #grab the frame from the threaded video stream and resize it
+    #to have a maximum width of 300 pixels
+    frame=vs.read()
+    frame=imutils.resize(frame,width=300)
+    
+    #detecting and recognizing masked faces in the frame and predicting
+    (locs,preds)=detect_and_predict_face_detection_model(frame,Net,faceNet)
+    
+    #loop over the detected face locations and their corresponding locations
+    
+    for (box,pred) in zip(locs,preds):
+        (startX,startY,endX,endY)=box
+        (correct,not_correct)=pred
+        #determine the class_labels and color we will use to draw the bounding box and test
+        Class_Labels='correct' if correct > not_correct else 'No Class'
+        color=(0,255,0) if Class_Labels =='class' else (0,0,255)
+
+         #display the label and bounding boxes
+        cv2.putText(frame,label,(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.8,color,2)
+        cv2.rectangle(frame,(startX,startY),(endX,endY),color,2)
+       
+    #show the output frame
+    cv2.imshow("Frame",frame)
+    key=cv2.waitKey(1) & 0xFF
+    
+    if key==ord('q'):
+        break
+        cv2.destroyAllWindows()
+
+vs.stop()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
