@@ -1,0 +1,361 @@
+1st part - Coding for Model Training & Testing performance Accuracy, Loss
+
+import numpy as np
+import os
+from imutils import paths
+from keras import optimizers
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.layers import AveragePooling2D
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import Flatten
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from keras.preprocessing import image as image_utils
+from keras.applications.imagenet_utils import decode_predictions
+from keras.applications.imagenet_utils import preprocess_input
+import argparse
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.keras.utils import to_categorical
+import face_detection
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.linear_model import LogisticRegression
+import pandas as pd
+from re import search
+import shutil
+import natsort
+from PIL import Image
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tqdm import tqdm 
+import cv2
+from keras.preprocessing import image
+from tensorflow.keras.models import load_model
+import imutils
+from distutils.version import StrictVersion
+from keras.models import Sequential
+from keras.layers.convolutional import Conv2D
+from keras.layers.convolutional import MaxPooling2D
+from keras.layers.core import Activation
+from keras.layers.core import Flatten
+from keras.layers.core import Dense
+from keras import backend as K
+from tensorflow.keras import datasets, layers, models, losses
+from IPython.display import display, Image
+import os, glob
+import seaborn as sns
+from tensorflow.keras.callbacks import Callback,EarlyStopping
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import confusion_matrix , classification_report 
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.metrics import roc_curve, auc, roc_auc_score
+from IPython.display import clear_output
+import warnings
+warnings.filterwarnings('ignore')
+from tensorflow.keras.utils import plot_model
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+aug=ImageDataGenerator(rotation_range=20,zoom_range=0.15,width_shift_range=0.2,height_shift_range=0.2,shear_range=0.15,
+horizontal_flip=True,vertical_flip=False,fill_mode='nearest')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DATASET=(r'C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET')
+imagePaths=list(paths.list_images(DATASET))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+imagePaths
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+inputFolder=(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET\1-Real_Face')
+folderLen=len(inputFolder)
+os.mkdir(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\1-Real_Face')
+for img in glob.glob(inputFolder +"/*.*"):
+    image=cv2.imread(img)
+    imgResized=cv2.resize(image, (224,224))
+    cv2.imwrite(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\1-Real_Face'+img[folderLen:], imgResized)
+
+    
+inputFolder=(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET\2-Fake_Face_Easy')
+folderLen=len(inputFolder)
+os.mkdir(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\2-Fake_Face_Easy')
+for img in glob.glob(inputFolder +"/*.*"):
+    image=cv2.imread(img)
+    imgResized=cv2.resize(image, (224,224))
+    cv2.imwrite(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\2-Fake_Face_Easy'+img[folderLen:], imgResized)
+        
+    
+inputFolder=(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET\3-Fake_Face_Mid')
+folderLen=len(inputFolder)
+os.mkdir(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\3-Fake_Face_Mid')
+for img in glob.glob(inputFolder +"/*.*"):
+    image=cv2.imread(img)
+    imgResized=cv2.resize(image, (224,224))
+    cv2.imwrite(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\3-Fake_Face_Mid'+img[folderLen:], imgResized)
+        
+        
+inputFolder=(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET\4-Fake_Face_Hard')
+folderLen=len(inputFolder)
+os.mkdir(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\4-Fake_Face_Hard')
+for img in glob.glob(inputFolder +"/*.*"):
+    image=cv2.imread(img)
+    imgResized=cv2.resize(image, (224,224))
+    cv2.imwrite(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1\4-Fake_Face_Hard'+img[folderLen:], imgResized)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DATASET1=r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1'
+imagePaths=list(paths.list_images(DATASET1))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+imagePaths
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Class_Names=os.listdir(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1')
+Class_Names
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+train_dir = r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1'
+test_dir = r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\DATASET1'
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SEED = 12
+IMG_HEIGHT = 224
+IMG_WIDTH = 224
+BATCH_SIZE = 32
+FINE_TUNING_EPOCHS = 45
+LR = 0.001
+NUM_CLASSES = 4
+EARLY_STOPPING_CRITERIA=3
+CLASS_LABELS  = ['1-Real_Face','2-Fake_Face_Easy','3-Fake_Face_Mid','4-Fake_Face_Hard']
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+preprocess_fun = tf.keras.applications.mobilenet_v2.preprocess_input
+
+train_datagen = ImageDataGenerator(horizontal_flip=True,
+                                   width_shift_range=0.2,
+                                   height_shift_range=0.2,
+                                   rescale = 1./255,
+                                   validation_split = 0.2,
+                                   preprocessing_function=preprocess_fun
+                                  )
+test_datagen = ImageDataGenerator(rescale = 1./255,
+                                  validation_split = 0.2,
+                                  preprocessing_function=preprocess_fun)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+train_generator = train_datagen.flow_from_directory(directory = train_dir,
+                                                    target_size = (224,224),
+                                                    batch_size = BATCH_SIZE,
+                                                    shuffle  = True , 
+                                                    color_mode = "rgb",
+                                                    class_mode = "categorical",
+                                                    subset = "training",
+                                                    seed = 12
+                                                   )
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+validation_generator = test_datagen.flow_from_directory(directory = train_dir,
+                                                         target_size = (224,224),
+                                                         batch_size = BATCH_SIZE,
+                                                         shuffle  = True , 
+                                                         color_mode = "rgb",
+                                                         class_mode = "categorical",
+                                                         subset = "validation",
+                                                         seed = 12
+                                                        )
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_generator = test_datagen.flow_from_directory(directory = test_dir,
+                                                         target_size = (224,224),
+                                                         batch_size = BATCH_SIZE,
+                                                         shuffle  = False , 
+                                                         color_mode = "rgb",
+                                                         class_mode = "categorical",
+                                                         subset = "validation",
+                                                         seed = 12
+                                                        )
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Helper Functions
+def display_one_image(image, title, subplot, color):
+    plt.subplot(subplot)
+    plt.axis('off')
+    plt.imshow(image)
+    plt.title(title, fontsize=16)
+    
+def display_nine_images(images, titles, title_colors=None):
+    subplot = 331
+    plt.figure(figsize=(13,13))
+    for i in range(9):
+        color = 'black' if title_colors is None else title_colors[i]
+        display_one_image(images[i], titles[i], 331+i, color)
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=0.2, hspace=0.2)
+    plt.show()
+
+def image_title(label, prediction):
+  # Both prediction (probabilities) and label (one-hot) are arrays with one item per class.
+    class_idx = np.argmax(label, axis=-1)
+    prediction_idx = np.argmax(prediction, axis=-1)
+    if class_idx == prediction_idx:
+        return f'{CLASS_LABELS[prediction_idx]} [correct]', 'black'
+    else:
+        return f'{CLASS_LABELS[prediction_idx]} [incorrect, should be {CLASS_LABELS[class_idx]}]', 'red'
+
+def get_titles(images, labels, model):
+    predictions = model.predict(images)
+    titles, colors = [], []
+    for label, prediction in zip(classes, predictions):
+        title, color = image_title(label, prediction)
+        titles.append(title)
+        colors.append(color)
+    return titles, colors
+
+img_datagen = ImageDataGenerator(rescale = 1./255)
+img_generator = img_datagen.flow_from_directory(directory = train_dir,
+                                                    target_size = (224,224),
+                                                    batch_size = BATCH_SIZE,
+                                                    shuffle  = True , 
+                                                    color_mode = "rgb",
+                                                    class_mode = "categorical",
+                                                    subset = "training",
+                                                    seed = 12
+                                                   )
+
+clear_output()
+
+images, classes = next(img_generator)
+class_idxs = np.argmax(classes, axis=-1) 
+labels = [CLASS_LABELS[idx] for idx in class_idxs]
+display_nine_images(images, labels)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+fig = px.bar(x = CLASS_LABELS,
+             y = [list(train_generator.classes).count(i) for i in np.unique(train_generator.classes)] , 
+             color = np.unique(train_generator.classes) ,
+             color_continuous_scale="Viridis") 
+fig.update_xaxes(title="")
+fig.update_yaxes(title = "Number of Images")
+fig.update_layout(showlegend = True,
+    title = {
+        'text': 'Train Data Distribution ',
+        'y':0.95,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'})
+fig.show()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+fig = px.bar(x = CLASS_LABELS,
+             y = [list(test_generator.classes).count(i) for i in np.unique(test_generator.classes)] , 
+             color = np.unique(test_generator.classes) ,
+             color_continuous_scale="plasma") 
+fig.update_xaxes(title="")
+fig.update_yaxes(title = "Number of Images")
+fig.update_layout(showlegend = True,
+    title = {
+        'text': 'Test Data Distribution ',
+        'y':0.95,
+        'x':0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'})
+fig.show()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Original_Model= MobileNetV2(input_shape=(224,224,3),include_top=False, weights='imagenet')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Original_Model.summary()
+ ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+headModel=Original_Model.output
+NewModel=tf.keras.layers.BatchNormalization(renorm=True)(headModel)
+NewModel=tf.keras.layers.GlobalAveragePooling2D()(NewModel)
+NewModel=tf.keras.layers.Dense(256, activation='relu')(NewModel)
+NewModel=tf.keras.layers.Dense(128, activation='relu')(NewModel)
+NewModel=tf.keras.layers.Dropout(0.5)(NewModel)
+NewModel=tf.keras.layers.Dense(4,activation='softmax')(NewModel)
+
+model=Model(inputs=Original_Model.input,outputs=NewModel)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+for layer in Original_Model.layers:
+    layer.trainable=False
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model.summary()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+prototxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\deploy.prototxt'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+weightsPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\res10_300x300_ssd_iter_140000.caffemodel'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pbtxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector.pbtxt'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+weightsPath1=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector_uint8.pb'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+net=cv2.dnn.readNet(prototxtPath,weightsPath)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+facenet=cv2.dnn.readNet(pbtxtPath,weightsPath1)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model.compile(optimizer=tf.keras.optimizers.Adam(0.001), #lower learning rate
+                loss='categorical_crossentropy',
+                metrics = ['accuracy'])
+
+history_ = model.fit(x = train_generator,epochs = FINE_TUNING_EPOCHS ,validation_data = validation_generator)
+history = history.append(pd.DataFrame(history_.history) , ignore_index=True)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model.save(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\CMNV2.model')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+acc_train=history_.history['accuracy']
+acc_val=history_.history['val_accuracy']
+epochs=range(1,46)
+plt.plot(epochs,acc_train,'brown',label='Training Accuracy')
+plt.plot(epochs,acc_val,'blue',label='Testing Accuracy')
+plt.title("Training and Testing Accuracy")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.show()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+loss_train=history_.history['loss']
+loss_val=history_.history['val_loss']
+epochs=range(1,46)
+plt.plot(epochs,loss_train,'brown',label='Training Loss')
+plt.plot(epochs,loss_val,'blue',label='Testing Loss')
+plt.title("Training and Testing Loss")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+plt.show()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model.evaluate(test_generator)
+preds = model.predict(test_generator)
+y_preds = np.argmax(preds , axis = 1 )
+y_test = np.array(test_generator.labels)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cm_data = confusion_matrix(y_test , y_preds)
+cm = pd.DataFrame(cm_data, columns=CLASS_LABELS, index = CLASS_LABELS)
+cm.index.name = 'Actual'
+cm.columns.name = 'Predicted'
+plt.figure(figsize = (20,10))
+plt.title('Confusion Matrix', fontsize = 30)
+sns.set(font_scale=2)
+ax = sns.heatmap(cm, cbar=True, cmap="coolwarm", annot=True, linewidth=0.5, annot_kws={"size": 40}, cbar_kws={"orientation":"vertical"}, fmt='g')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+print(classification_report(y_test, y_preds))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+fig, c_ax = plt.subplots(1,1, figsize = (15,8))
+
+def multiclass_roc_auc_score(y_test, y_pred, average="macro"):
+    lb = LabelBinarizer()
+    lb.fit(y_test)
+    y_test = lb.transform(y_test)
+    for (idx, c_label) in enumerate(CLASS_LABELS):
+        fpr, tpr, thresholds = roc_curve(y_test[:,idx].astype(int), y_pred[:,idx])
+        c_ax.plot(fpr, tpr,lw=2, label = '%s (AUC:%0.2f)'  % (c_label, auc(fpr, tpr)))
+    c_ax.plot(fpr, fpr, 'black',linestyle='dashed', lw=4, label = 'Random Guessing')
+    return roc_auc_score(y_test, y_pred, average=average)
+
+print('ROC AUC score:', multiclass_roc_auc_score(y_test , preds  , average = "micro"))
+plt.xlabel('FALSE POSITIVE RATE', fontsize=16)
+plt.ylabel('TRUE POSITIVE RATE', fontsize=16)
+plt.legend(fontsize = 15)
+plt.show()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+print("ROC-AUC Score  = " ,roc_auc_score(to_categorical(y_test) , preds))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+model.save(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\CMNV2.h5')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
