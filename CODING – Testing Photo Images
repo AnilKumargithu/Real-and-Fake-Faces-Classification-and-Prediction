@@ -1,0 +1,95 @@
+2nd part - Coding for photo images Prediction
+
+from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.models import load_model
+import face_detection
+import numpy as np
+import cv2
+import os
+import imutils
+from distutils.version import StrictVersion
+from object_detection.utils import ops as utils_ops
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+prototxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\deploy.prototxt'])
+weightsPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\res10_300x300_ssd_iter_140000.caffemodel'])
+pbtxtPath=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector.pbtxt'])
+weightsPath1=os.path.sep.join([r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\opencv_face_detector_uint8.pb'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+net=cv2.dnn.readNet(prototxtPath,weightsPath)
+facenet=cv2.dnn.readNet(pbtxtPath,weightsPath1)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+face_detection_model = cv2.dnn.readNet(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\model\CMNV2.model')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Class_Labels = ['1-Real_Face','2-Fake_Face_Easy','3-Fake_Face_Mid','4-Fake_Face_Hard']
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+image=cv2.imread(r’C:\Users\VITAP\anaconda3\Python-3.9\B.Anil Kumar\Real and Fake Face Detection\Test images\example_01.jpg/png')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+color_green = (0, 255, 0)
+color_red = (0, 0, 255)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Resizing the image to  size for faster processing
+ image = cv2.resize(image, (300, 300))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+blob=cv2.dnn.blobFromImage(image,1.0,(300,300),(104.0,177.0,123.0))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+net.setInput(blob)
+detections=net.forward()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+facenet.setInput(blob)
+detections=facenet.forward()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+detections
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#loop over the detections
+for i in range(0,detections.shape[2]):
+    confidence=detections[0,0,i,2]
+    
+    if confidence>0.5:
+        #we need the X,Y coordinates
+        box=detections[0,0,i,3:7]*np.array([w,h,w,h])
+        (startX,startY,endX,endY)=box.astype('int')
+
+    #detecting and recognizing faces in the image and predicting if they are correct class or not
+    (locs,preds)=detect_and_predict_face_detection_model(image,Net,faceNet)
+
+        #extracting the fact ROI,converting it from BGR to RGB channel,resize it to 300,300 and preprocessing it
+        face=image[startY:endY, startX:endX]
+        face=cv2.cvtColor(face,cv2.COLOR_BGR2RGB)
+        face=cv2.resize(face,(300,300))
+        face=img_to_array(face)
+        face=preprocess_input(face)
+        face=np.expand_dims(face,axis=0)
+
+        # Preprocessing the face for face detection (resizing to match our model's input size)
+        input_size = (300, 300)  
+        face_blob = cv2.dnn.blobFromImage(face_ROI, 1.0, input_size, (104, 117, 123), swapRB=True)
+
+        # Setting the input for the face detection model
+        face_detection_model.setInput(face_blob)
+        face_detection_model.setInput(face_ROI)
+
+        # Cropping the detected face for face detection
+    	for (x, y, w, h) in faces:
+        face_ROI = image[y:y+h, x:x+w]
+
+            # Performing face detection using CMNV2 model
+            face_embeddings = face_detection_model.forward()
+
+            # Determining the class label based on CMNV2 face detection results
+            Class_Labels = ' correct_class ' 
+
+            # Draw a bounding box around the face with the appropriate color
+            color = color_green if Class_Labels == ' correct_class ' else color_red
+       
+        #ensure the bounding boxes fall within the dimensions of the image
+        (startX,startY)=(max(0,startX), max(0,startY))
+        (endX,endY)=(min(w-1,endX), min(h-1,endY))
+        
+        #display the label and bounding boxes
+        cv2.putText(image, class_labels,(startX,startY-10),cv2.FONT_HERSHEY_SIMPLEX,0.8,color,2)
+        cv2.rectangle(image,(startX,startY),(endX,endY),color,2)
+        
+    cv2.imshow("Output",image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
